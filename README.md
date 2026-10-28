@@ -2,6 +2,8 @@
 
 [![CI](https://github.com/alexndala/sa-normality/actions/workflows/ci.yml/badge.svg)](https://github.com/alexndala/sa-normality/actions/workflows/ci.yml)
 
+**Live demo:** https://sa-normality-production.up.railway.app
+
 Interactive distribution and tail-risk diagnostics for South African assets.
 Built for JSE equities, indices, ETFs, bonds, ZAR FX and commodities.
 
