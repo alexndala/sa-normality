@@ -21,41 +21,44 @@ const roboto = localFont({
 
 export const dynamic = 'force-dynamic';
 
-const railwayDomain = process.env.RAILWAY_PUBLIC_DOMAIN;
-const siteUrl =
-  process.env.NEXT_PUBLIC_SITE_URL ??
-  (railwayDomain ? `https://${railwayDomain}` : 'http://localhost:3000');
-
 const title = 'Normality of Returns | South African Assets';
 const description =
   'Explore the distribution of South African asset returns: price history, tail risk, normal and Student-t fits, and a normal Q-Q plot.';
 
-export const metadata: Metadata = {
-  metadataBase: new URL(siteUrl),
-  title,
-  description,
-  robots: { index: true, follow: true },
-  openGraph: {
+export async function generateMetadata(): Promise<Metadata> {
+  const railwayDomain = process.env.RAILWAY_PUBLIC_DOMAIN;
+  const siteUrl =
+    process.env.SITE_URL ??
+    process.env.NEXT_PUBLIC_SITE_URL ??
+    (railwayDomain ? `https://${railwayDomain}` : 'http://localhost:3000');
+
+  return {
+    metadataBase: new URL(siteUrl),
     title,
     description,
-    type: 'website',
-    url: siteUrl,
-    images: [
-      {
-        url: '/og.png',
-        width: 1200,
-        height: 630,
-        alt: 'SA Normality of Returns dashboard',
-      },
-    ],
-  },
-  twitter: {
-    card: 'summary_large_image',
-    title,
-    description,
-    images: ['/og.png'],
-  },
-};
+    robots: { index: true, follow: true },
+    openGraph: {
+      title,
+      description,
+      type: 'website',
+      url: siteUrl,
+      images: [
+        {
+          url: '/og.png',
+          width: 1200,
+          height: 630,
+          alt: 'SA Normality of Returns dashboard',
+        },
+      ],
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title,
+      description,
+      images: ['/og.png'],
+    },
+  };
+}
 
 export default function RootLayout({
   children,
