@@ -19,11 +19,38 @@ const roboto = localFont({
   display: 'swap',
 });
 
+const siteUrl =
+  process.env.NEXT_PUBLIC_SITE_URL ?? 'http://localhost:3000';
+
+const title = 'Normality of Returns | South African Assets';
+const description =
+  'Explore the distribution of South African asset returns: price history, tail risk, normal and Student-t fits, and a normal Q-Q plot.';
+
 export const metadata: Metadata = {
-  title: 'Normality of Returns | South African Assets',
-  description:
-    'Explore the distribution of South African asset returns: price history, return density versus a normal fit, and a normal Q-Q plot.',
-  robots: { index: false, follow: false },
+  metadataBase: new URL(siteUrl),
+  title,
+  description,
+  robots: { index: true, follow: true },
+  openGraph: {
+    title,
+    description,
+    type: 'website',
+    url: siteUrl,
+    images: [
+      {
+        url: '/og.png',
+        width: 1200,
+        height: 630,
+        alt: 'SA Normality of Returns dashboard',
+      },
+    ],
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title,
+    description,
+    images: ['/og.png'],
+  },
 };
 
 export default function RootLayout({

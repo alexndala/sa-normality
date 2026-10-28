@@ -144,6 +144,7 @@ export default function QQPlot({ analysis }: QQPlotProps) {
         data={data}
         layout={layout}
         ariaLabel={`Normal quantile-quantile plot of ${meta.name} returns`}
+        chartId="qq-chart"
       />
     </section>
   );

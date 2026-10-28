@@ -1,4 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { buildNarrative } from '@/lib/narrative';
+import { computeRiskMetrics } from '@/lib/risk';
 import {
   computeKde,
   computeNormalCurve,
@@ -6,7 +8,12 @@ import {
   computeReturns,
   describeReturns,
   histogramDensity,
+  sampleStd,
 } from '@/lib/stats';
+import {
+  buildStudentTCurve,
+  fitDistributions,
+} from '@/lib/studentT';
 import type {
   AnalyzeResponse,
   ReturnType,
@@ -160,18 +167,31 @@ export async function GET(request: NextRequest) {
       (maximum - minimum) * 0.02,
       1e-6,
     );
+    const std = sampleStd(returns);
     const normal = computeNormalCurve(
       diagnostics.meanDaily,
-      Math.sqrt(
-        returns.reduce(
-          (sum, value) => sum + (value - diagnostics.meanDaily) ** 2,
-          0,
-        ) /
-          Math.max(1, returns.length - 1),
-      ),
+      std,
       minimum - padding,
       maximum + padding,
     );
+    const fit = fitDistributions(returns);
+    const studentTCurve = fit.studentT
+      ? buildStudentTCurve(
+          fit.studentT,
+          minimum - padding,
+          maximum + padding,
+        )
+      : null;
+    const risk = computeRiskMetrics(returns, series.values);
+    const narrative = buildNarrative({
+      diagnostics,
+      risk,
+      fit,
+      meta: {
+        name: series.name,
+        symbol: series.symbol,
+      },
+    });
 
     const payload: AnalyzeResponse = {
       success: true,
@@ -193,10 +213,14 @@ export async function GET(request: NextRequest) {
         values: series.values,
       },
       diagnostics,
+      risk,
+      fit,
+      narrative,
       distribution: {
         histogram,
         kde: { x: kde.x, y: kde.y },
         normal,
+        studentT: studentTCurve,
         bandwidth: kde.bandwidth,
       },
       qq: computeQq(returns),

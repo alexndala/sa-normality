@@ -1,25 +1,40 @@
 # SA Normality of Returns
 
-An interactive web app for testing the normality of daily returns on South
-African assets. It mirrors the WorldQuant University "Normality of Returns"
-app but uses a JSE-focused asset universe.
+[![CI](https://github.com/alexndala/sa-normality/actions/workflows/ci.yml/badge.svg)](https://github.com/alexndala/sa-normality/actions/workflows/ci.yml)
 
-Select an asset and date range on the left, then inspect:
+Interactive distribution and tail-risk diagnostics for South African assets.
+Built for JSE equities, indices, ETFs, bonds, ZAR FX and commodities.
+
+<img src="docs/screenshot-desktop.png" alt="SA Normality of Returns desktop view" width="760" />
+
+## What it does
+
+Select an asset and date range, then inspect:
 
 1. **Price history** — adjusted closing price in ZAR (or USD for global assets).
-2. **Distribution of returns** — histogram, Gaussian kernel density estimate,
-   and a fitted normal distribution.
+2. **Distribution of returns** — histogram, Gaussian kernel density, normal fit
+   and Student-t fit.
 3. **Normal Q-Q plot** — standardised returns against theoretical normal
-   quantiles, with a quartile reference line.
+   quantiles with a quartile reference line.
+4. **Tail-risk panel** — historical and normal-implied 95%/99% VaR and CVaR,
+   worst day, maximum drawdown, and 2σ/3σ exceedances.
+5. **Plain-English verdict** — what the skew, kurtosis, Jarque-Bera result and
+   tail gap mean for this sample.
 
-A diagnostics strip reports observations, daily mean, annualised volatility,
-total return, skewness, excess kurtosis, the Jarque–Bera statistic and p-value,
-and a normality verdict at the 5% level.
+The app also generates a **two-page PDF report** with all charts, diagnostics and
+methodology. See a [sample report](docs/sample-report.pdf).
+
+Every analysis is shareable through the URL, for example:
+
+```text
+/?symbol=STXGOV.JO&start=2020-01-01&end=2024-12-31&type=log
+```
 
 ## Stack
 
 - Next.js 14 (App Router, TypeScript)
 - Plotly (`plotly.js-basic-dist-min`, loaded on the client)
+- `jsPDF` for client-side reports
 - Yahoo Finance chart endpoint, proxied through `/api/analyze`
 - Vitest for the statistics unit tests
 
@@ -44,11 +59,13 @@ npm start
 
 ## Asset universe
 
-The curated list lives in `src/lib/assets.ts` and is grouped as:
+The curated list lives in `src/lib/assets.ts`:
 
-- JSE indices (All Share, Top 40, Top 40 USD Net TRI)
-- JSE equities (Naspers, FirstRand, MTN, Sasol, banks, miners, retailers, property)
-- SA ETFs (Satrix 40, sector ETFs, property, MSCI World feeder, TRACI, NewGold)
+- JSE indices: All Share, Top 40, Top 40 USD Net TRI
+- JSE equities: Naspers, Prosus, banks, insurers, miners, retailers, property
+- SA ETFs and bonds: Satrix 40, Capped All Share, sector ETFs, property,
+  SA Bond (`STXGOV.JO`), ILBI (`STXILB.JO`), MSCI World, EM, Nasdaq 100,
+  TRACI, NewGold
 - ZAR FX pairs
 - Commodities priced in USD
 - Crypto
@@ -64,8 +81,9 @@ JSE symbols generally use the `.JO` suffix (for example `NPN.JO`).
 - `start`, `end`: `YYYY-MM-DD`
 - `returnType`: `simple` or `log`
 
-The response contains the price series, diagnostics, histogram/KDE/normal
-curves, and Q-Q plot data. Responses are cached in memory for 15 minutes.
+The response includes the price series, diagnostics, risk metrics, normal and
+Student-t fits, histogram/KDE curves, Q-Q data and the generated narrative.
+Responses are cached in memory for 15 minutes.
 
 `GET /api/health` returns a health payload for Railway.
 
@@ -76,9 +94,14 @@ curves, and Q-Q plot data. Responses are cached in memory for 15 minutes.
 - Annualised volatility: sample standard deviation × √252.
 - Skewness: third standardised moment.
 - Excess kurtosis: fourth standardised moment − 3.
-- Jarque–Bera: `n/6 × (S² + K²/4)` with p-value `exp(−JB/2)` (χ² with 2 df).
-- KDE: Gaussian kernel, Silverman bandwidth
-  `0.9 × min(σ, IQR/1.34) × n^(−1/5)`.
+- Jarque–Bera: `n/6 × (S² + K²/4)`, p-value `exp(−JB/2)` (χ² with 2 df).
+- VaR/CVaR: 1-day historical estimates; normal estimates use the sample mean
+  and standard deviation. Ratios compare historical with normal.
+- Exceedances: actual days below `μ − 2σ` and `μ − 3σ` versus normal expectation.
+- Student-t: maximum-likelihood fit over `(μ, σ, ν)`, with a moment
+  approximation if optimisation fails. AIC compares the normal and t fits.
+- KDE: Gaussian kernel, Silverman's rule of thumb
+  `0.9 × σ × n^(−1/5)`.
 - Q-Q: plotting positions `(i − 0.5)/n`; quartile line through the 25th and
   75th percentiles (equivalent to R's `qqline`).
 
@@ -90,16 +113,41 @@ The repo includes a multi-stage `Dockerfile` and `railway.toml`:
 railway up
 ```
 
+Set `NEXT_PUBLIC_SITE_URL` to the public URL so Open Graph metadata resolves
+correctly.
+
 The container listens on `PORT` (default `3000`) and exposes `/api/health`.
-`next.config.js` uses `output: 'standalone'` so the runtime image only contains
-the production server and static assets.
+`next.config.js` uses `output: 'standalone'` when `BUILD_STANDALONE=1` is set
+during the Docker build.
+
+## Project structure
+
+```text
+src/lib/risk.ts        VaR/CVaR, drawdown, exceedances
+src/lib/studentT.ts    Student-t density and MLE fit
+src/lib/narrative.ts   plain-English verdict builder
+src/lib/report.ts      two-page PDF report
+src/lib/share.ts       URL state validation
+src/components/        selection, charts, risk panel, report actions
+src/app/api/analyze/   Yahoo proxy and analytics endpoint
+```
 
 ## Limitations
 
 - Yahoo Finance is an unofficial, delayed data source and may rate-limit
   requests from cloud IPs. The API caches responses and retries `query2` after
   `query1`, but occasional failures are possible.
-- Yahoo does not provide a clean SA government-bond total-return index. Use
-  `STXTRA.JO` (TRACI cash) or a custom ticker if you have one.
-- The normality tests describe the selected historical sample only. They are
-  not a forecast and not investment advice.
+- Tail metrics are 1-day, in-sample estimates. They describe the selected
+  sample, not a forecast.
+- Some SA series, such as `STXILB.JO`, can contain extreme price prints. The
+  distribution chart clips a Student-t peak when it would otherwise make the
+  histogram unreadable.
+- The normality tests and risk metrics are not investment advice.
+
+## Roadmap
+
+- JSE normality screener with a nightly snapshot
+- Rolling 60/120/250-day skew, kurtosis and Jarque-Bera diagnostics
+- SA event annotations (COVID, July 2021 unrest, elections, load shedding)
+- Compare mode for two or three assets
+- Portfolio-level distribution builder

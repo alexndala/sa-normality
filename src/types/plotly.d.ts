@@ -7,6 +7,10 @@ declare module 'plotly.js-basic-dist-min' {
       config?: unknown,
     ): Promise<unknown>;
     purge(element: HTMLElement): void;
+    toImage(
+      element: HTMLElement,
+      options?: Record<string, unknown>,
+    ): Promise<string>;
     Plots: {
       resize(element: HTMLElement): void;
     };

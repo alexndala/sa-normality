@@ -9,7 +9,7 @@ interface DistributionPlotProps {
 }
 
 export default function DistributionPlot({ analysis }: DistributionPlotProps) {
-  const { distribution, meta, diagnostics } = analysis;
+  const { distribution, meta, diagnostics, fit } = analysis;
 
   const data = useMemo(
     () => [
@@ -42,12 +42,44 @@ export default function DistributionPlot({ analysis }: DistributionPlotProps) {
         x: distribution.normal.x,
         y: distribution.normal.y,
         name: 'Normal fit',
-        line: { color: '#092a36', width: 2, dash: 'dash' },
+        line: { color: '#8a9a96', width: 2, dash: 'dash' },
         hovertemplate:
           'Return %{x:.2%}<br>Density %{y:.3f}<extra></extra>',
       },
+      ...(distribution.studentT
+        ? [
+            {
+              type: 'scatter',
+              mode: 'lines',
+              x: distribution.studentT.x,
+              y: distribution.studentT.y,
+              name: `Student-t (ν = ${fit.studentT?.df.toFixed(1)})`,
+              line: { color: '#092a36', width: 2.2 },
+              hovertemplate:
+                'Return %{x:.2%}<br>Density %{y:.3f}<extra></extra>',
+            },
+          ]
+        : []),
     ],
-    [distribution],
+    [distribution, fit.studentT],
+  );
+
+  const densityCap = useMemo(() => {
+    const values = [
+      ...distribution.histogram.y,
+      ...distribution.kde.y,
+      ...distribution.normal.y,
+    ];
+    const maximum = Math.max(...values, 0);
+    return maximum > 0 ? maximum * 1.2 : 1;
+  }, [distribution]);
+
+  const tClipped = useMemo(
+    () =>
+      distribution.studentT
+        ? Math.max(...distribution.studentT.y, 0) > densityCap
+        : false,
+    [distribution, densityCap],
   );
 
   const layout = useMemo(
@@ -97,6 +129,7 @@ export default function DistributionPlot({ analysis }: DistributionPlotProps) {
           text: 'Density',
           font: { size: 10.5, color: '#5f7278' },
         },
+        range: [0, densityCap],
         gridcolor: '#eef1f0',
         zeroline: false,
         tickfont: { size: 10 },
@@ -115,7 +148,7 @@ export default function DistributionPlot({ analysis }: DistributionPlotProps) {
         },
       ],
     }),
-    [meta.returnType],
+    [meta.returnType, densityCap],
   );
 
   return (
@@ -124,8 +157,9 @@ export default function DistributionPlot({ analysis }: DistributionPlotProps) {
         <div>
           <h3 id="distribution-heading">Distribution of returns</h3>
           <p>
-            Histogram, kernel density estimate and fitted normal distribution
+            Histogram, kernel density, normal and Student-t fits
             {` · n = ${diagnostics.n.toLocaleString('en-ZA')}`}
+            {tClipped ? ' · Student-t peak clipped for readability' : ''}
           </p>
         </div>
         <span className="plot-tag">
@@ -136,7 +170,8 @@ export default function DistributionPlot({ analysis }: DistributionPlotProps) {
       <PlotlyChart
         data={data}
         layout={layout}
-        ariaLabel={`Distribution of ${meta.name} returns compared with a normal distribution`}
+        ariaLabel={`Distribution of ${meta.name} returns compared with normal and Student-t fits`}
+        chartId="distribution-chart"
       />
     </section>
   );

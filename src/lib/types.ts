@@ -42,6 +42,46 @@ export interface Diagnostics {
   normalityRejected: boolean;
 }
 
+export interface RiskMetrics {
+  var95: number;
+  var99: number;
+  cvar95: number;
+  cvar99: number;
+  normalVar95: number;
+  normalVar99: number;
+  normalCvar95: number;
+  normalCvar99: number;
+  var99Ratio: number;
+  cvar99Ratio: number;
+  worstDay: number;
+  maxDrawdown: number;
+  exceed2Sigma: number;
+  expected2Sigma: number;
+  exceed3Sigma: number;
+  expected3Sigma: number;
+}
+
+export interface StudentTFitSummary {
+  mu: number;
+  sigma: number;
+  df: number;
+  logLik: number;
+  aic: number;
+  bic: number;
+  method: 'mle' | 'moment';
+}
+
+export interface FitSummary {
+  normal: {
+    logLik: number;
+    aic: number;
+    bic: number;
+  };
+  studentT: StudentTFitSummary | null;
+  deltaAIC: number | null;
+  tPreferred: boolean;
+}
+
 export interface AnalyzeMeta {
   symbol: string;
   name: string;
@@ -61,10 +101,14 @@ export interface AnalyzeResponse {
   meta: AnalyzeMeta;
   price: PriceSeries;
   diagnostics: Diagnostics;
+  risk: RiskMetrics;
+  fit: FitSummary;
+  narrative: string;
   distribution: {
     histogram: HistogramDensity;
     kde: Curve;
     normal: Curve;
+    studentT: Curve | null;
     bandwidth: number;
   };
   qq: {

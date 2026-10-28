@@ -17,6 +17,7 @@ interface PlotlyChartProps {
   layout: Record<string, unknown>;
   config?: Record<string, unknown>;
   ariaLabel: string;
+  chartId?: string;
 }
 
 export default function PlotlyChart({
@@ -24,6 +25,7 @@ export default function PlotlyChart({
   layout,
   config,
   ariaLabel,
+  chartId,
 }: PlotlyChartProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const plotlyRef = useRef<PlotlyApi | null>(null);
@@ -88,6 +90,7 @@ export default function PlotlyChart({
   return (
     <div
       ref={containerRef}
+      id={chartId}
       className="plot-canvas"
       role="img"
       aria-label={ariaLabel}

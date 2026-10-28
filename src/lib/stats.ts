@@ -206,7 +206,7 @@ export function describeReturns(values: number[]): Diagnostics {
 
 export function histogramDensity(
   values: number[],
-  maxBins = 40,
+  maxBins = 60,
 ): HistogramDensity {
   const n = values.length;
   if (n === 0) return { x: [], y: [], width: 0 };
@@ -265,11 +265,8 @@ export function computeKde(
 
   const moments = describeMoments(values);
   const sorted = [...values].sort((a, b) => a - b);
-  const iqr = quantileSorted(sorted, 0.75) - quantileSorted(sorted, 0.25);
-  const spread =
-    iqr > 0 ? Math.min(moments.sampleStd, iqr / 1.34) : moments.sampleStd;
 
-  let bandwidth = 0.9 * spread * n ** -0.2;
+  let bandwidth = 0.9 * moments.sampleStd * n ** -0.2;
   if (!Number.isFinite(bandwidth) || bandwidth <= 0) {
     bandwidth = Math.max(Math.abs(moments.mean) * 0.01, 1e-6);
   }

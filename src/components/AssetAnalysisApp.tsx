@@ -1,10 +1,13 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import AssetActions from '@/components/AssetActions';
 import DiagnosticsStrip from '@/components/DiagnosticsStrip';
 import DistributionPlot from '@/components/DistributionPlot';
+import NarrativeCard from '@/components/NarrativeCard';
 import PricePlot from '@/components/PricePlot';
 import QQPlot from '@/components/QQPlot';
+import RiskPanel from '@/components/RiskPanel';
 import SelectionCard from '@/components/SelectionCard';
 import { DEFAULT_ASSET } from '@/lib/assets';
 import {
@@ -12,6 +15,7 @@ import {
   todayIso,
   yearsAgoIso,
 } from '@/lib/format';
+import { buildShareUrl, readShareState } from '@/lib/share';
 import type {
   AnalyzeResponse,
   ReturnType,
@@ -28,6 +32,7 @@ export default function AssetAnalysisApp() {
   const [analysis, setAnalysis] = useState<AnalyzeResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [initialised, setInitialised] = useState(false);
 
   const dateError =
     start && end && start >= end
@@ -35,7 +40,37 @@ export default function AssetAnalysisApp() {
       : null;
 
   useEffect(() => {
-    if (!symbol || !start || !end) return;
+    const state = readShareState(window.location.search, {
+      symbol: DEFAULT_ASSET,
+      start: DEFAULT_START,
+      end: todayIso(),
+      returnType: 'simple',
+    });
+
+    setSymbol(state.symbol);
+    setStart(state.start);
+    setEnd(state.end);
+    setReturnType(state.returnType);
+    setInitialised(true);
+  }, []);
+
+  useEffect(() => {
+    if (!initialised) return;
+
+    const url = buildShareUrl(window.location.href, {
+      symbol,
+      start,
+      end,
+      returnType,
+    });
+
+    if (url !== window.location.href) {
+      window.history.replaceState(null, '', url);
+    }
+  }, [initialised, symbol, start, end, returnType]);
+
+  useEffect(() => {
+    if (!initialised || !symbol || !start || !end) return;
 
     if (start >= end) {
       setError('The start date must be before the end date.');
@@ -87,7 +122,7 @@ export default function AssetAnalysisApp() {
       window.clearTimeout(timer);
       controller.abort();
     };
-  }, [symbol, start, end, returnType]);
+  }, [initialised, symbol, start, end, returnType]);
 
   function handleQuickRange(years: number | 'max') {
     setStart(years === 'max' ? '1990-01-01' : yearsAgoIso(years));
@@ -211,22 +246,50 @@ export default function AssetAnalysisApp() {
                       </span>
                     </div>
                   </div>
-                  <div className="summary-dates">
-                    <span>Actual data range</span>
-                    <strong>
-                      {formatIsoDate(analysis.meta.firstDate)} —{' '}
-                      {formatIsoDate(analysis.meta.lastDate)}
-                    </strong>
+                  <div className="summary-right">
+                    <div className="summary-dates">
+                      <span>Actual data range</span>
+                      <strong>
+                        {formatIsoDate(analysis.meta.firstDate)} —{' '}
+                        {formatIsoDate(analysis.meta.lastDate)}
+                      </strong>
+                    </div>
+                    <AssetActions analysis={analysis} />
                   </div>
                 </div>
 
                 <DiagnosticsStrip diagnostics={analysis.diagnostics} />
+                <NarrativeCard narrative={analysis.narrative} />
+                <RiskPanel risk={analysis.risk} fit={analysis.fit} />
 
                 <div className="plot-stack">
                   <PricePlot analysis={analysis} />
                   <DistributionPlot analysis={analysis} />
                   <QQPlot analysis={analysis} />
                 </div>
+
+                <details className="methodology">
+                  <summary>How these numbers are calculated</summary>
+                  <div className="methodology-body">
+                    <p>
+                      VaR and CVaR are 1-day historical estimates from the
+                      selected sample. Normal estimates use the sample mean and
+                      standard deviation. Ratios compare the historical loss
+                      estimate with the normal one.
+                    </p>
+                    <p>
+                      The Student-t fit is estimated by maximum likelihood,
+                      with a moment approximation if optimisation fails. AIC
+                      compares the normal and Student-t fits; lower is better.
+                    </p>
+                    <p>
+                      Returns use adjusted close. JSE prices quoted in cents
+                      are converted to rand. Data comes from Yahoo Finance and
+                      is delayed. This is historical analysis, not a forecast or
+                      investment advice.
+                    </p>
+                  </div>
+                </details>
               </div>
             </article>
           )}

@@ -86,6 +86,7 @@ export default function PricePlot({ analysis }: PricePlotProps) {
         data={data}
         layout={layout}
         ariaLabel={`${meta.name} adjusted closing price history`}
+        chartId="price-chart"
       />
     </section>
   );
