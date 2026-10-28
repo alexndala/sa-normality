@@ -19,8 +19,12 @@ const roboto = localFont({
   display: 'swap',
 });
 
+export const dynamic = 'force-dynamic';
+
+const railwayDomain = process.env.RAILWAY_PUBLIC_DOMAIN;
 const siteUrl =
-  process.env.NEXT_PUBLIC_SITE_URL ?? 'http://localhost:3000';
+  process.env.NEXT_PUBLIC_SITE_URL ??
+  (railwayDomain ? `https://${railwayDomain}` : 'http://localhost:3000');
 
 const title = 'Normality of Returns | South African Assets';
 const description =

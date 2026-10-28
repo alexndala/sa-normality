@@ -114,7 +114,8 @@ railway up
 ```
 
 Set `NEXT_PUBLIC_SITE_URL` to the public URL so Open Graph metadata resolves
-correctly.
+correctly. On Railway, `RAILWAY_PUBLIC_DOMAIN` is used automatically when the
+variable is absent.
 
 The container listens on `PORT` (default `3000`) and exposes `/api/health`.
 `next.config.js` uses `output: 'standalone'` when `BUILD_STANDALONE=1` is set
