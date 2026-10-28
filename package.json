@@ -1,0 +1,28 @@
+{
+  "name": "sa-normality",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Normality analysis of South African asset returns",
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "next": "14.2.35",
+    "plotly.js-basic-dist-min": "^4.1.2",
+    "react": "18.3.1",
+    "react-dom": "18.3.1"
+  },
+  "devDependencies": {
+    "@types/node": "^20.14.0",
+    "@types/react": "^18.3.0",
+    "@types/react-dom": "^18.3.0",
+    "eslint": "^8.57.0",
+    "eslint-config-next": "14.2.35",
+    "typescript": "^5.6.0",
+    "vitest": "^2.1.0"
+  }
+}
